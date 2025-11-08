@@ -157,3 +157,41 @@ def sub_callback(topic, msg):
 # Connect Wi-Fi
 wifi_connect(WIFI_SSID, WIFI_PASSWORD)
 
+
+# Prepare MQTT Client
+client_id = get_unique_client_id()
+print(f"MQTT Client ID: {client_id.decode()}")
+
+try:
+    # Initialize and connect MQTT
+    mqtt_client = MQTTClient(
+        client_id=client_id,
+        server=MQTT_BROKER,
+        port=1883,
+        user=None,
+        password=None,
+        keepalive=60
+    )
+    mqtt_client.set_callback(sub_callback)
+    
+    print(f"Connecting to MQTT broker {MQTT_BROKER}...")
+    mqtt_client.connect()
+    print("MQTT connected.")
+    
+    # Subscribe to the command topic
+    mqtt_client.subscribe(COMMAND_TOPIC)
+    print(f"Subscribed to command topic: {COMMAND_TOPIC.decode()}")
+    
+    # Initialize and publish the current OFF state
+    set_led_and_publish_status(mqtt_client, False)
+
+    # Main Loop
+    while True:
+        # Check for new messages on the subscribed topic
+        mqtt_client.check_msg() 
+        time.sleep(1) # Keep the loop responsive but not overly demanding
+        
+except Exception as e:
+    print(f"An error occurred: {e}")
+    print("Attempting to reconnect in 10 seconds...")
+    time.sleep(10)
