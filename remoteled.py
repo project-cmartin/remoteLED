@@ -111,6 +111,47 @@ def wifi_connect(WIFI_SSID, WIFI_PASSWORD):
 
 
 
+def get_unique_client_id():
+    """Generates a unique MQTT client ID based on the ESP32's MAC address."""
+    mac = ubinascii.hexlify(network.WLAN().config('mac'), ':').decode()
+    client_id = b"esp32_led_controller_" + mac.encode('utf-8')
+    return client_id
+
+def set_led_and_publish_status(client, new_state_bool):
+    """Sets the LED state and publishes the corresponding status message."""
+    global led_state
+
+    led_value = 0 if new_state_bool else 1
+    led.value(led_value)
+    led_state = new_state_bool
+
+    status_message = b"ON" if led_state else b"OFF"
+    print(f"LED set to: {status_message.decode()}, Publishing status to {STATUS_TOPIC.decode()}")
+    client.publish(STATUS_TOPIC, status_message, retain=True)
+
+
+
+   # --- MQTT CALLBACK ---
+
+def sub_callback(topic, msg):
+    """Handles incoming MQTT messages on the command topic."""
+    
+    # Note: Topic is not strictly needed here but is provided by MQTTClient
+    print(f"Received command: Topic='{topic.decode()}', Message='{msg.decode()}'")
+    
+    command = msg.decode().strip().upper()
+    
+    # Case-insensitive ON/OFF control logic
+    if command == "ON":
+        set_led_and_publish_status(mqtt_client, True)
+    elif command == "OFF":
+        set_led_and_publish_status(mqtt_client, False)
+    else:
+        print(f"Invalid command received: {command}. Must be ON or OFF.")
+
+
+
+
 # --- MAIN EXECUTION ---
 
 # Connect Wi-Fi
