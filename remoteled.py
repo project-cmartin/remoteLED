@@ -121,7 +121,7 @@ def set_led_and_publish_status(client, new_state_bool):
     """Sets the LED state and publishes the corresponding status message."""
     global led_state
 
-    led_value = 0 if new_state_bool else 1
+    led_value = 1 if new_state_bool else 0
     led.value(led_value)
     led_state = new_state_bool
 
